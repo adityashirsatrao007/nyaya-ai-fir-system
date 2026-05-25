@@ -38,3 +38,13 @@
 - Font classes added: `font-display` on header, `font-heading` on section titles.
 - NextUI component overrides: `classNames` prop for Tabs/Dropdown dark styling.
 - Modal content classNames updated to surface theme.
+
+## Lessons Learned & Prevented Mistakes
+
+1. **Avoid Git Bloat (Venvs & Node Modules):** Ensure a comprehensive `.gitignore` is initialized *before* staging files to prevent uploading heavy system/python environments and packages, which lead to git server unpack failures.
+2. **Address Port Mismatches Early:** Standardize and verify communication ports between frontend proxies (`vite.config.js` target) and backend APIs (Uvicorn port) immediately during setup.
+3. **Clean OCR Noise systematically:** Strip out known metadata-heavy blocks (e.g., properties/particulars sections) before parsing text to prevent years, values, and serial numbers from triggering false positive section matches.
+4. **Handle Regional Numeral Forms:** Convert Devanagari numerals (e.g., `१२३४`) to ASCII digits (`1234`) right after extraction to support regional language OCR outputs.
+5. **Optimize CPU OCR with Early-Exit:** OCR processing on CPU is slow (~70-90s per run). Implement early-exit quality scoring so that if a pass confidently extracts target sections, it skips subsequent image enhancements.
+6. **Resolve UI Event Propagation Issues:** Use explicit click triggers and `e.stopPropagation()` when custom component frameworks (like NextUI) wrap standard HTML inputs (like file inputs) to prevent buttons from swallowing click events.
+
