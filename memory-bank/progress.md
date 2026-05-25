@@ -21,5 +21,5 @@ Frontend vibified with Dark Luxury aesthetic. Builds and runs cleanly.
 | 2026-05-24 | Fixed connection issues (port 8001), enhanced evidence analysis with HF integration, updated UI themes, added animations |
 | 2026-05-24 | Integrated pre-trained SentenceTransformer (all-MiniLM-L6-v2) for semantic IPC matching, updated EasyOCR and deep-translator translation logic to fully support Marathi, verified implementation, and restarted backend service. |
 | 2026-05-25 | Created the 10 demo FIR images validation pipeline, resolved OCR section misrecognition using heuristics/corrections, filtered out metadata/property false positives, updated the IPC sections database, and generated the batch analysis report. |
-| 2026-05-25 | Analyzed OCR execution times, verified "None Detected" cases, and created simplified labeled demo files (1.jpg, 2.jpg, 3.jpg) for presentation. |
+| 2026-05-25 | Analyzed OCR execution times, verified "None Detected" cases, created simplified labeled demo files (1.jpg, 2.jpg, 3.jpg), and added a startup automation script (start.sh). |
 
