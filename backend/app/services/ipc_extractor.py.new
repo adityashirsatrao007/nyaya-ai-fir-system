@@ -3,10 +3,6 @@ IPC Section Extractor
 Extracts Indian Penal Code section references from text using regex patterns
 and maps them to detailed section information
 """
-import os
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
-
 import re
 import json
 import logging
@@ -17,46 +13,6 @@ logger = logging.getLogger(__name__)
 
 # Load IPC sections database
 _ipc_database: Optional[Dict] = None
-
-# Global variables for SentenceTransformer model
-_transformer_model = None
-_sections_embeddings = None
-_embedding_sections_list = []
-
-
-def get_transformer_model():
-    """Lazy load SentenceTransformer model for semantic matching"""
-    global _transformer_model
-    if _transformer_model is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            logger.info("Loading SentenceTransformer model ('all-MiniLM-L6-v2')...")
-            _transformer_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-            logger.info("SentenceTransformer model loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load SentenceTransformer: {e}")
-    return _transformer_model
-
-
-def get_sections_embeddings():
-    """Lazy load and calculate embeddings for all IPC sections in the database"""
-    global _sections_embeddings, _embedding_sections_list
-    if _sections_embeddings is None:
-        model = get_transformer_model()
-        if model is not None:
-            try:
-                from sentence_transformers import util
-                db = load_ipc_database()
-                _embedding_sections_list = list(db.keys())
-                # Format: "Title: Description" to give semantic context
-                texts = [f"{db[s].get('title', '')}: {db[s].get('description', '')}" for s in _embedding_sections_list]
-                logger.info(f"Computing semantic embeddings for {len(texts)} IPC sections...")
-                _sections_embeddings = model.encode(texts, convert_to_tensor=True)
-                logger.info("IPC section embeddings computed successfully")
-            except Exception as e:
-                logger.error(f"Failed to compute IPC section embeddings: {e}")
-    return _sections_embeddings, _embedding_sections_list
-
 
 
 def load_ipc_database() -> Dict:
@@ -89,56 +45,50 @@ def get_ipc_patterns() -> List[Tuple[str, re.Pattern]]:
     patterns = [
         # "Section 302" or "Section 302/307"
         ("section", re.compile(
-            r'\bSection[s]?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)(?!\d)',
+            r'\bSection[s]?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)',
             re.IGNORECASE
         )),
         
         # "Sec. 302" or "Sec 302"
         ("sec", re.compile(
-            r'\bSec\.?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)(?!\d)',
+            r'\bSec\.?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)',
             re.IGNORECASE
         )),
         
         # "u/s 302" or "U/S 302" (under section)
         ("under_section", re.compile(
-            r'\bu/s\.?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)(?!\d)',
+            r'\bu/s\.?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)',
             re.IGNORECASE
         )),
         
         # "IPC 302" or "IPC Section 302"
         ("ipc_direct", re.compile(
-            r'\bIPC\s*(?:Section[s]?)?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)(?!\d)',
+            r'\bIPC\s*(?:Section[s]?)?\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)',
             re.IGNORECASE
         )),
         
         # "302 IPC" or "302/307 IPC"
         ("section_ipc", re.compile(
-            r'\b(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)\s*(?:of\s+)?IPC\b',
+            r'(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)\s*(?:of\s+)?IPC\b',
             re.IGNORECASE
         )),
         
         # "धारा 302" (Hindi)
         ("dhara", re.compile(
-            r'धारा\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)(?!\d)',
+            r'धारा\s*(\d{1,3}[A-Z]?(?:\s*/\s*\d{1,3}[A-Z]?)*)',
             re.IGNORECASE
         )),
         
         # "302, 307, 420" - multiple sections
         ("comma_separated", re.compile(
-            r'(?:Section[s]?|धारा|u/s|IPC)\s*(\d{1,3}[A-Z]?(?:\s*,\s*\d{1,3}[A-Z]?)+)(?!\d)',
+            r'(?:Section[s]?|धारा|u/s|IPC)\s*(\d{1,3}[A-Z]?(?:\s*,\s*\d{1,3}[A-Z]?)+)',
             re.IGNORECASE
         )),
         
         # Standalone section numbers in legal context (with word boundaries)
         # Only match if surrounded by legal keywords
         ("contextual", re.compile(
-            r'(?:charged|accused|booked|registered|filed|offense|offence|punishable|under)\s+(?:under\s+)?(\d{1,3}[A-Z]?)\b',
-            re.IGNORECASE
-        )),
-        
-        # "341|313|273" or "302/307/34" - sequences of numbers separated by symbols or spaces (common in OCR noise)
-        ("number_sequence", re.compile(
-            r'\b(\d{2,3}[A-Z]?(?:[|/,\-_\s]\d{2,3}[A-Z]?)+)(?!\d)',
+            r'(?:charged|accused|booked|registered|filed|offense|offence|punishable|under)\s+(?:under\s+)?(\d{1,3}[A-Z]?)',
             re.IGNORECASE
         )),
     ]
@@ -148,8 +98,7 @@ def get_ipc_patterns() -> List[Tuple[str, re.Pattern]]:
 
 def extract_section_numbers(text: str) -> Tuple[List[str], List[str]]:
     """
-    Extract IPC section numbers from text. Supports splitting by
-    commas, slashes, pipes, underscores, and hyphens.
+    Extract IPC section numbers from text
     
     Args:
         text: Input text containing IPC references
@@ -159,11 +108,7 @@ def extract_section_numbers(text: str) -> Tuple[List[str], List[str]]:
     """
     patterns = get_ipc_patterns()
     raw_matches = []
-    
-    # Track which patterns matched each section
-    section_patterns = {}
-    
-    db = load_ipc_database()
+    sections = set()
     
     for pattern_name, pattern in patterns:
         matches = pattern.findall(text)
@@ -171,51 +116,20 @@ def extract_section_numbers(text: str) -> Tuple[List[str], List[str]]:
         for match in matches:
             raw_matches.append(f"{pattern_name}: {match}")
             
-            # Handle multiple sections (separated by /, ,, |, _, -, or space)
-            if any(char in match for char in ['/', ',', '|', '_', '-', ' ']):
-                parts = re.split(r'[/,|_\-\s]\s*', match)
+            # Handle multiple sections (separated by / or ,)
+            if '/' in match or ',' in match:
+                # Split by / or ,
+                parts = re.split(r'[/,]\s*', match)
                 for part in parts:
-                    part = part.strip().upper()
+                    part = part.strip()
                     if part and re.match(r'^\d{1,3}[A-Z]?$', part, re.IGNORECASE):
-                        if part not in section_patterns:
-                            section_patterns[part] = set()
-                        section_patterns[part].add(pattern_name)
+                        sections.add(part.upper())
             else:
-                match = match.strip().upper()
+                match = match.strip()
                 if match and re.match(r'^\d{1,3}[A-Z]?$', match, re.IGNORECASE):
-                    if match not in section_patterns:
-                        section_patterns[match] = set()
-                    section_patterns[match].add(pattern_name)
-                    
-    # Filter sections:
-    # A section is kept if:
-    # 1. It has at least one strong pattern match, OR
-    # 2. It is present in the local IPC database keys, OR
-    # 3. It's a very common section that we want to keep.
-    strong_patterns = {"section", "sec", "under_section", "ipc_direct", "section_ipc", "dhara", "comma_separated"}
+                    sections.add(match.upper())
     
-    filtered_sections = []
-    for section, matched_patterns in section_patterns.items():
-        # Check if it has a strong match
-        has_strong = any(p in strong_patterns for p in matched_patterns)
-        
-        # Check if it is in the database
-        in_db = section in db
-        
-        # Normalize: if not in db, try matching without suffix (e.g. 354A -> 354)
-        if not in_db:
-            base_match = re.match(r'^(\d+)', section)
-            if base_match:
-                in_db = base_match.group(1) in db
-                
-        # Also let's check for common CrPC sections that we want to exclude to prevent false positives
-        # CrPC 154, 155, 156, 173, 174 are CrPC, not IPC!
-        is_crpc = section in {"154", "155", "156", "173", "174"}
-        
-        if (has_strong or in_db) and not is_crpc:
-            filtered_sections.append(section)
-            
-    return sorted(filtered_sections), raw_matches
+    return sorted(list(sections)), raw_matches
 
 
 def get_section_info(section: str) -> Optional[Dict]:
@@ -248,13 +162,10 @@ def get_section_info(section: str) -> Optional[Dict]:
 
 def extract_ipc_sections(text: str) -> List[Dict]:
     """
-    Extract all IPC sections from text with detailed information.
-    Uses regex to extract explicitly mentioned section numbers, and
-    falls back to semantic similarity using SentenceTransformers to detect
-    relevant sections based on the crime description.
+    Extract all IPC sections from text with detailed information
     
     Args:
-        text: Input text containing IPC references or crime description
+        text: Input text containing IPC references
         
     Returns:
         List of dictionaries containing section details
@@ -262,12 +173,8 @@ def extract_ipc_sections(text: str) -> List[Dict]:
     sections, raw_matches = extract_section_numbers(text)
     
     results = []
-    matched_sections_set = set()
-    
-    # 1. Process explicit regex matched sections
     for section in sections:
         info = get_section_info(section)
-        matched_sections_set.add(section.upper())
         
         if info:
             results.append({
@@ -288,45 +195,7 @@ def extract_ipc_sections(text: str) -> List[Dict]:
                 "category": "Unknown",
                 "confidence": 0.7  # Lower confidence for unmatched sections
             })
-            
-    # 2. Use semantic similarity to match the description against all IPC sections
-    try:
-        model = get_transformer_model()
-        embeddings, sections_list = get_sections_embeddings()
-        
-        if model is not None and embeddings is not None and sections_list:
-            cleaned_query = text.strip()
-            # Ensure the query is long enough to contain descriptive details
-            if len(cleaned_query) > 20:
-                from sentence_transformers import util
-                query_embedding = model.encode(cleaned_query, convert_to_tensor=True)
-                cos_scores = util.cos_sim(query_embedding, embeddings)[0]
-                
-                # Fetch top matches
-                top_k = min(3, len(sections_list))
-                top_results = cos_scores.topk(k=top_k)
-                
-                for score, idx in zip(top_results[0], top_results[1]):
-                    score_val = float(score)
-                    sec_name = sections_list[int(idx)]
-                    
-                    # If similarity is significant (>= 0.40) and not already matched via regex
-                    if score_val >= 0.40 and sec_name.upper() not in matched_sections_set:
-                        db = load_ipc_database()
-                        info = db.get(sec_name, {})
-                        
-                        results.append({
-                            "section": sec_name,
-                            "title": info.get("title", f"Section {sec_name}"),
-                            "description": info.get("description", "") + " (Semantically Matched from Description)",
-                            "punishment": info.get("punishment", ""),
-                            "category": info.get("category", "General"),
-                            "confidence": round(score_val, 2)
-                        })
-                        matched_sections_set.add(sec_name.upper())
-    except Exception as e:
-        logger.error(f"Error during semantic IPC matching: {e}")
-        
+    
     return results
 
 

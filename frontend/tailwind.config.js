@@ -10,40 +10,52 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#FBF8F1", // Very soft cream parchment
-        foreground: "#2D231F", // Deep rich mahogany brown
-        court: {
-          50: "#fdf8f5",
-          100: "#f8eee7",
-          200: "#eddace",
-          300: "#dfbeac",
-          400: "#cb9b81",
-          500: "#b97b5e",
-          600: "#a96449",
-          700: "#8c4f39",
-          800: "#744333",
-          900: "#5d382b",
+        background: "#0A0A0A",
+        foreground: "#F5F5F0",
+        surface: "#121214",
+        elevated: "#1A1A1E",
+        glass: "rgba(26, 26, 30, 0.6)",
+        "glass-border": "rgba(255, 255, 255, 0.08)",
+        "glass-border-hover": "rgba(255, 255, 255, 0.12)",
+        "text-secondary": "rgba(255, 255, 255, 0.6)",
+        "text-tertiary": "rgba(255, 255, 255, 0.35)",
+        nyaya: {
+          50: "#f0f7ff",
+          100: "#e0effe",
+          200: "#baddfd",
+          300: "#7ec2fc",
+          400: "#3ba3f9",
+          500: "#0A84FF",
+          600: "#0066d6",
+          700: "#0050a4",
+          800: "#004185",
+          900: "#00376e",
         },
-        gold: {
-          100: "#fdf6e3",
-          200: "#faeab9",
-          300: "#f5d985",
-          400: "#E6C15D", // Primary shiny gold
-          500: "#D4AF37", // Base metallic gold
-          600: "#B8860B", // Dark goldenrod
-          700: "#8a6205",
-          800: "#604301",
-          900: "#362400",
-        }
+        amber: {
+          50: "#fff8e6",
+          100: "#feefc3",
+          200: "#fdde8a",
+          300: "#fcc747",
+          400: "#fbb117",
+          500: "#D4AF37",
+          600: "#b08c0a",
+          700: "#8a6b05",
+          800: "#6a5208",
+          900: "#55430a",
+        },
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         serif: ["Playfair Display", "serif"],
+        display: ["Outfit", "sans-serif"],
+        heading: ["Plus Jakarta Sans", "sans-serif"],
+        dramatic: ["Cormorant Garamond", "serif"],
       },
       boxShadow: {
-        'premium': '0 10px 40px -10px rgba(45, 35, 31, 0.15)',
-        'gold-glow': '0 0 20px rgba(212, 175, 55, 0.3)',
-      }
+        'premium': '0 10px 40px -10px rgba(0, 0, 0, 0.4)',
+        'glow': '0 0 20px rgba(10, 132, 255, 0.2)',
+        'glow-amber': '0 0 20px rgba(212, 175, 55, 0.2)',
+      },
     },
   },
   darkMode: "class",

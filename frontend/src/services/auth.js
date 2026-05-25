@@ -44,7 +44,7 @@ export function getCurrentUser() {
  */
 export async function login(email, password) {
   try {
-    const response = await fetch('http://localhost:8000/auth/login', {
+    const response = await fetch('http://localhost:8001/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -83,7 +83,7 @@ export async function register(name, email, password) {
       return { success: false, error: 'Password must be at least 6 characters' };
     }
     
-    const response = await fetch('http://localhost:8000/auth/register', {
+     const response = await fetch('http://localhost:8001/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),

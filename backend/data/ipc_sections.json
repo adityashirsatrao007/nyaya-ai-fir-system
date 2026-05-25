@@ -797,6 +797,24 @@
       "description": "Punishment for attempting to commit offences punishable with imprisonment for life or other imprisonment",
       "punishment": "Up to half the longest term provided for the offence",
       "category": "General"
+    },
+    "338": {
+      "title": "Causing Grievous Hurt by Endangering Life",
+      "description": "Causing grievous hurt by act endangering life or personal safety of others",
+      "punishment": "Imprisonment up to 2 years, or fine up to Rs. 1000, or both",
+      "category": "Against Person"
+    },
+    "322": {
+      "title": "Voluntarily Causing Grievous Hurt",
+      "description": "Voluntarily causing grievous hurt",
+      "punishment": "Refer to Section 325 for punishment",
+      "category": "Against Person"
+    },
+    "273": {
+      "title": "Sale of Noxious Food or Drink",
+      "description": "Sale of noxious food or drink",
+      "punishment": "Imprisonment up to 6 months, or fine up to Rs. 1000, or both",
+      "category": "Against Public Health"
     }
   }
 }
