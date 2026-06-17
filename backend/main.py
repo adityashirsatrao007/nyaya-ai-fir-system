@@ -1,25 +1,51 @@
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-import asyncio
-import json
-import logging
 import os
+import sys
+import json
 import random
-import re
+import asyncio
 import uuid
 import urllib.parse
+import re
+import logging
 from typing import Any, Dict, Optional
+from contextlib import asynccontextmanager
+from urllib.parse import urlparse
+
+from fastapi import FastAPI, UploadFile, File, Form, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
+
+# Load env
+from dotenv import load_dotenv
+load_dotenv()
+
 from app.routes.auth import router as auth_router, get_db_connection, release_db_connection
 from app.routes.fir import router as fir_router
 from app.routes.legal_search import router as legal_search_router
 from app.services.evidence_forensics import analyze_uploaded_evidence
 
-app = FastAPI(title="Multimodal Evidence Analysis API")
+# ─── Config ───────────────────────────────────────────────────────────────
+DATABASE_URL = os.getenv("DATABASE_URL")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173,https://nyaya-frontend-three.vercel.app").split(",")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8001")
 
-# Include routers
+logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+logger = logging.getLogger("nyaya")
+
+# ─── Lifespan ─────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting Nyaya — Multimodal Evidence Analysis API")
+    yield
+    logger.info("Shutting down Nyaya")
+
+app = FastAPI(title="Nyaya — Multimodal Evidence Analysis API", lifespan=lifespan)
+
+# ─── Include Routers ─────────────────────────────────────────────────────
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(fir_router, prefix="/api/v1", tags=["fir"])
 app.include_router(legal_search_router, prefix="/api/v1/legal", tags=["legal"])
@@ -29,9 +55,10 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# ─── CORS ────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,9 +74,45 @@ class AnalysisResponse(BaseModel):
     detected_ipcs: list[str] = []
     image_url: str | None = None
 
-@app.get("/")
+@app.get("/", tags=["Health"])
 def read_root():
-    return {"message": "Multimodal Evidence Analysis API is running."}
+    return {
+        "message": "Nyaya — Multimodal Evidence Analysis API",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    """Health check with database connectivity."""
+    db_ok = False
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        release_db_connection(conn)
+        db_ok = True
+    except Exception:
+        pass
+    status = "healthy" if db_ok else "degraded"
+    return {
+        "status": status,
+        "service": "Nyaya",
+        "version": "1.0.0",
+        "environment": os.getenv("ENV", "production"),
+        "db": "connected" if db_ok else "disconnected",
+    }
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"success": False, "error": "Internal server error."},
+    )
 
 
 def _save_uploaded_image(file_bytes: bytes, original_name: str, content_type: str, subdir: str) -> str | None:
@@ -76,7 +139,7 @@ def _save_uploaded_image(file_bytes: bytes, original_name: str, content_type: st
     with open(file_path, "wb") as out_file:
         out_file.write(file_bytes)
 
-    return f"http://127.0.0.1:8000/static/{subdir}/{urllib.parse.quote(filename)}"
+    return f"{BACKEND_URL}/static/{subdir}/{urllib.parse.quote(filename)}"
 
 @app.get("/cases")
 def get_cases(email: Optional[str] = None):
