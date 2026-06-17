@@ -1,29 +1,12 @@
-/**
- * Authentication Service for Nyaya AI
- * Simple localStorage-based authentication for demo purposes
- */
-
-const AUTH_KEY = 'nyaya_ai_auth';
+const TOKEN_KEY = 'nyaya_ai_token';
 const USER_KEY = 'nyaya_ai_user';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// Demo users for testing
-const DEMO_USERS = [
-  { email: 'demo@nyaya.ai', password: 'demo123', name: 'Demo User', role: 'admin' },
-  { email: 'officer@nyaya.ai', password: 'officer123', name: 'Police Officer', role: 'officer' },
-  { email: 'analyst@nyaya.ai', password: 'analyst123', name: 'Legal Analyst', role: 'analyst' },
-];
-
-/**
- * Check if user is authenticated
- */
 export function isAuthenticated() {
-  const auth = localStorage.getItem(AUTH_KEY);
-  return auth === 'true';
+  const token = localStorage.getItem(TOKEN_KEY);
+  return !!token;
 }
 
-/**
- * Get current user info
- */
 export function getCurrentUser() {
   const userStr = localStorage.getItem(USER_KEY);
   if (userStr) {
@@ -36,23 +19,21 @@ export function getCurrentUser() {
   return null;
 }
 
-/**
- * Login user
- * @param {string} email 
- * @param {string} password 
- * @returns {Promise<{success: boolean, user?: object, error?: string}>}
- */
+export function getAuthHeaders() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 export async function login(email, password) {
   try {
-    const response = await fetch('http://localhost:8001/auth/login', {
+    const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    
     const data = await response.json();
     if (response.ok && data.success) {
-      localStorage.setItem(AUTH_KEY, 'true');
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       return { success: true, user: data.user };
     } else {
@@ -63,16 +44,8 @@ export async function login(email, password) {
   }
 }
 
-/**
- * Register new user
- * @param {string} name 
- * @param {string} email 
- * @param {string} password 
- * @returns {Promise<{success: boolean, user?: object, error?: string}>}
- */
 export async function register(name, email, password) {
   try {
-    // Validate inputs
     if (!name || name.length < 2) {
       return { success: false, error: 'Name must be at least 2 characters' };
     }
@@ -82,16 +55,14 @@ export async function register(name, email, password) {
     if (!password || password.length < 6) {
       return { success: false, error: 'Password must be at least 6 characters' };
     }
-    
-     const response = await fetch('http://localhost:8001/auth/register', {
+    const response = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
     });
-    
     const data = await response.json();
     if (response.ok && data.success) {
-      localStorage.setItem(AUTH_KEY, 'true');
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       return { success: true, user: data.user };
     } else {
@@ -102,32 +73,15 @@ export async function register(name, email, password) {
   }
 }
 
-/**
- * Logout user
- */
 export function logout() {
-  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-}
-
-/**
- * Get registered users from localStorage
- */
-function getRegisteredUsers() {
-  const usersStr = localStorage.getItem('nyaya_registered_users');
-  if (usersStr) {
-    try {
-      return JSON.parse(usersStr);
-    } catch {
-      return [];
-    }
-  }
-  return [];
 }
 
 export default {
   isAuthenticated,
   getCurrentUser,
+  getAuthHeaders,
   login,
   register,
   logout,

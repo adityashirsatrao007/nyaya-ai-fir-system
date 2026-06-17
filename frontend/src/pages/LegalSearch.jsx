@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, ChevronDown, Sparkles, BookOpen, Scale, Shield, ExternalLink, Gavel, AlertTriangle } from "lucide-react";
 import NavBar from "../components/NavBar";
 
-const API = "http://127.0.0.1:8001";
+const API = import.meta.env.VITE_API_URL || '/api/v1';
 
 const CATEGORY_COLORS = {
   "Offences Against Women": "bg-rose-900/40 text-rose-300 border-rose-700/50",

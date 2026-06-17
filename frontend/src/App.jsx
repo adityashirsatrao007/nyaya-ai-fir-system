@@ -30,6 +30,7 @@ function AnimatedRoutes() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
           <Route path="/search" element={<LegalSearch />} />
           <Route
             path="/app"

@@ -81,7 +81,7 @@ function Dashboard() {
     setErrorMsg("");
     try {
       const userEmail = user?.email || "demo@nyaya.ai";
-      const res = await fetch(`http://127.0.0.1:8001/cases?email=${encodeURIComponent(userEmail)}`);
+      const res = await fetch(`/api/v1/cases?email=${encodeURIComponent(userEmail)}`);
       if (!res.ok) throw new Error(`HTTP status ${res.status}`);
       const data = await res.json();
       if (data && data.cases) {
@@ -135,7 +135,7 @@ function Dashboard() {
       firData.append("file", firFile);
       firData.append("context", "fir");
 
-      const firRes = await fetch("http://127.0.0.1:8001/analyze", {
+      const firRes = await fetch("/api/v1/analyze", {
         method: "POST",
         body: firData,
       });
@@ -154,7 +154,7 @@ function Dashboard() {
         evData.append("file", evidenceFile);
         evData.append("context", "evidence");
 
-        const evRes = await fetch("http://127.0.0.1:8001/analyze", {
+        const evRes = await fetch("/api/v1/analyze", {
           method: "POST",
           body: evData,
         });
@@ -177,7 +177,7 @@ function Dashboard() {
       };
 
       try {
-        await fetch(`http://127.0.0.1:8001/cases?email=${encodeURIComponent(userEmail)}`, {
+        await fetch(`/api/v1/cases?email=${encodeURIComponent(userEmail)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newCase)
