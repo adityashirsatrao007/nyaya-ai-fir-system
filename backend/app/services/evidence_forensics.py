@@ -7,14 +7,6 @@ import mimetypes
 
 logger = logging.getLogger(__name__)
 
-# Try to import transformers - we'll use what we can without torch
-try:
-    from transformers import AutoConfig
-    HF_CONFIG_AVAILABLE = True
-except ImportError:
-    HF_CONFIG_AVAILABLE = False
-    logger.warning("Transformers not available - using heuristic analysis only")
-
 def analyze_uploaded_evidence(contents: bytes, filename: str, file_type: str) -> Dict[str, Any]:
     """
     Analyze uploaded evidence file for manipulation/authenticity.
@@ -154,7 +146,14 @@ def _analyze_for_manipulation(contents: bytes, filename: str, file_type: str, ev
     key_factors = ["File integrity check passed", "Basic format validation successful"]
     
     # Try to use Hugging Face model for image files
-    if file_type.startswith('image/') and len(contents) > 100 and HF_CONFIG_AVAILABLE and hf_token:
+    hf_config_available = False
+    try:
+        from transformers import AutoConfig
+        hf_config_available = True
+    except ImportError:
+        pass
+
+    if file_type.startswith('image/') and len(contents) > 100 and hf_config_available and hf_token:
         try:
             # Try to load model configuration to see if we can use it
             model_name = 'dima806/deepfake_vs_real_image_detection'
