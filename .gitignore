@@ -32,3 +32,12 @@ backend/venv/
 frontend/node_modules/
 *.pt
 *.pth
+
+# Docker
+.docker/
+
+# ML models
+*.safetensors
+
+# Test
+.pytest_cache/
