@@ -1,9 +1,8 @@
 import os
 from dotenv import load_dotenv
-import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import RealDictCursor
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import bcrypt
 

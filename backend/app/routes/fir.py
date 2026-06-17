@@ -3,7 +3,6 @@ FIR Processing API Routes
 Endpoints for uploading FIR images, extracting text, and identifying IPC sections
 """
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form
-from fastapi.responses import JSONResponse
 from typing import Optional
 import logging
 from datetime import datetime
@@ -13,8 +12,7 @@ from app.models.schemas import (
     FIRAnalysis, 
     IPCSection, 
     ExtractIPCRequest, 
-    ExtractIPCResponse,
-    ErrorResponse
+    ExtractIPCResponse
 )
 from app.services.ocr_service import (
     extract_text_from_image, 

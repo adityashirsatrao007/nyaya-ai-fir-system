@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 import easyocr
 import sys
-import os
 
 # Add backend directory to path
 sys.path.append(str(Path(__file__).parent))

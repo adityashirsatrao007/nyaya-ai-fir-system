@@ -45,7 +45,6 @@ def get_sections_embeddings():
         model = get_transformer_model()
         if model is not None:
             try:
-                from sentence_transformers import util
                 db = load_ipc_database()
                 _embedding_sections_list = list(db.keys())
                 # Format: "Title: Description" to give semantic context

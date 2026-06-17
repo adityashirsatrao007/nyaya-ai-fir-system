@@ -3,13 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
-import random
+import json
+import logging
 import os
+import random
 import re
 import uuid
 import urllib.parse
-from ipc_mapping import IPC_MAPPING
-from app.routes.auth import router as auth_router
+from typing import Any, Dict, Optional
+from psycopg2.extras import RealDictCursor
+from app.routes.auth import router as auth_router, get_db_connection, release_db_connection
 from app.routes.fir import router as fir_router
 from app.routes.legal_search import router as legal_search_router
 from app.services.evidence_forensics import analyze_uploaded_evidence
@@ -44,16 +47,9 @@ class AnalysisResponse(BaseModel):
     detected_ipcs: list[str] = []
     image_url: str | None = None
 
-import json
-
 @app.get("/")
 def read_root():
     return {"message": "Multimodal Evidence Analysis API is running."}
-
-from typing import Dict, Any, Optional
-from app.routes.auth import get_db_connection, release_db_connection
-from psycopg2.extras import RealDictCursor
-import logging
 
 
 def _save_uploaded_image(file_bytes: bytes, original_name: str, content_type: str, subdir: str) -> str | None:
@@ -114,7 +110,7 @@ def get_cases(email: Optional[str] = None):
             try:
                 with open("cases.json", "r") as f:
                     cases = json.load(f).get("cases", [])
-            except:
+            except Exception:
                 pass
                 
         return {"cases": cases}

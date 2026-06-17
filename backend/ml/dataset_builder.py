@@ -7,10 +7,9 @@ Builds training data from:
 """
 import json
 import re
-import os
 import random
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 # ─── IPC section patterns commonly found in FIR text ───
 IPC_TEXT_PATTERNS = [
@@ -564,7 +563,7 @@ def build_complete_dataset(output_path: str):
     
     unique_sections = sorted(list(set(all_ipc)))
     
-    print(f"\n📊 Dataset Statistics:")
+    print("\n📊 Dataset Statistics:")
     print(f"  Total samples: {len(all_samples)}")
     print(f"  Languages: {languages}")
     print(f"  Unique IPC sections: {len(unique_sections)}")

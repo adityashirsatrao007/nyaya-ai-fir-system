@@ -9,7 +9,7 @@ os.environ["HF_HUB_OFFLINE"] = "1"
 import io
 import re
 import logging
-from typing import Optional, Tuple
+from typing import Tuple
 from PIL import Image, ImageEnhance
 import numpy as np
 from langdetect import detect

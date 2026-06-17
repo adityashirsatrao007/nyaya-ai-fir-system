@@ -5,10 +5,8 @@ Build Complete IPC Knowledge Base
 - Saves to backend/data/ipc_complete.json
 """
 import json
-import sys
 import os
 import re
-import time
 
 # ─── Complete IPC sections with descriptions, punishments, Hindi & Marathi translations ───
 # Based on harshitv804/Indian_Penal_Code (HuggingFace) + Indian Penal Code 1860
