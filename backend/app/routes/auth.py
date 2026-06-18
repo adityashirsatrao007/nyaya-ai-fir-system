@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from psycopg2.pool import SimpleConnectionPool
@@ -12,7 +13,9 @@ load_dotenv()
 router = APIRouter()
 
 DATABASE_URL = os.getenv('DATABASE_URL')
-SECRET_KEY = os.getenv('SECRET_KEY', 'nyaya-secret-key-change-in-production')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set. Set it in Render Dashboard → Environment Variables.")
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -82,7 +85,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc), "jti": str(uuid.uuid4())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
