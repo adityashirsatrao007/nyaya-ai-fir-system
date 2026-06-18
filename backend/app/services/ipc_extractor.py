@@ -3,10 +3,6 @@ IPC Section Extractor
 Extracts Indian Penal Code section references from text using regex patterns
 and maps them to detailed section information
 """
-import os
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
-
 import re
 import json
 import logging
@@ -17,44 +13,6 @@ logger = logging.getLogger(__name__)
 
 # Load IPC sections database
 _ipc_database: Optional[Dict] = None
-
-# Global variables for SentenceTransformer model
-_transformer_model = None
-_sections_embeddings = None
-_embedding_sections_list = []
-
-
-def get_transformer_model():
-    """Lazy load SentenceTransformer model for semantic matching"""
-    global _transformer_model
-    if _transformer_model is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            logger.info("Loading SentenceTransformer model ('all-MiniLM-L6-v2')...")
-            _transformer_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-            logger.info("SentenceTransformer model loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load SentenceTransformer: {e}")
-    return _transformer_model
-
-
-def get_sections_embeddings():
-    """Lazy load and calculate embeddings for all IPC sections in the database"""
-    global _sections_embeddings, _embedding_sections_list
-    if _sections_embeddings is None:
-        model = get_transformer_model()
-        if model is not None:
-            try:
-                db = load_ipc_database()
-                _embedding_sections_list = list(db.keys())
-                # Format: "Title: Description" to give semantic context
-                texts = [f"{db[s].get('title', '')}: {db[s].get('description', '')}" for s in _embedding_sections_list]
-                logger.info(f"Computing semantic embeddings for {len(texts)} IPC sections...")
-                _sections_embeddings = model.encode(texts, convert_to_tensor=True)
-                logger.info("IPC section embeddings computed successfully")
-            except Exception as e:
-                logger.error(f"Failed to compute IPC section embeddings: {e}")
-    return _sections_embeddings, _embedding_sections_list
 
 
 
@@ -288,44 +246,6 @@ def extract_ipc_sections(text: str) -> List[Dict]:
                 "confidence": 0.7  # Lower confidence for unmatched sections
             })
             
-    # 2. Use semantic similarity to match the description against all IPC sections
-    try:
-        model = get_transformer_model()
-        embeddings, sections_list = get_sections_embeddings()
-        
-        if model is not None and embeddings is not None and sections_list:
-            cleaned_query = text.strip()
-            # Ensure the query is long enough to contain descriptive details
-            if len(cleaned_query) > 20:
-                from sentence_transformers import util
-                query_embedding = model.encode(cleaned_query, convert_to_tensor=True)
-                cos_scores = util.cos_sim(query_embedding, embeddings)[0]
-                
-                # Fetch top matches
-                top_k = min(3, len(sections_list))
-                top_results = cos_scores.topk(k=top_k)
-                
-                for score, idx in zip(top_results[0], top_results[1]):
-                    score_val = float(score)
-                    sec_name = sections_list[int(idx)]
-                    
-                    # If similarity is significant (>= 0.40) and not already matched via regex
-                    if score_val >= 0.40 and sec_name.upper() not in matched_sections_set:
-                        db = load_ipc_database()
-                        info = db.get(sec_name, {})
-                        
-                        results.append({
-                            "section": sec_name,
-                            "title": info.get("title", f"Section {sec_name}"),
-                            "description": info.get("description", "") + " (Semantically Matched from Description)",
-                            "punishment": info.get("punishment", ""),
-                            "category": info.get("category", "General"),
-                            "confidence": round(score_val, 2)
-                        })
-                        matched_sections_set.add(sec_name.upper())
-    except Exception as e:
-        logger.error(f"Error during semantic IPC matching: {e}")
-        
     return results
 
 

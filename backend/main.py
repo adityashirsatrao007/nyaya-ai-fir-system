@@ -269,8 +269,8 @@ async def analyze_evidence(file: UploadFile = File(...), context: str = Form("ev
             from app.services.ocr_service import extract_text_from_image, clean_extracted_text, detect_language, translate_to_english
             from app.services.ipc_extractor import extract_ipc_sections
             
-            # Perform actual OCR processing
-            raw_text, conf, method = await asyncio.to_thread(extract_text_from_image, contents, True)
+            # Perform actual OCR processing via HF Inference API
+            raw_text, conf, method = await extract_text_from_image(contents, True)
             cleaned_text = clean_extracted_text(raw_text)
             
             # Accurately detect language
